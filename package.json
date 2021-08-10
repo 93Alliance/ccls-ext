@@ -2,7 +2,7 @@
 	"name": "cclsext",
 	"displayName": "cclsext",
 	"description": "ccls extensions",
-	"publisher": "ccls-extensions",
+	"publisher": "flywine",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.59.0"
