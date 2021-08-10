@@ -3,6 +3,10 @@
 	"displayName": "cclsext",
 	"description": "ccls extensions",
 	"publisher": "flywine",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/93Alliance/ccls-ext"
+	},
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.59.0"
