@@ -34,6 +34,8 @@ Reference [vscode-ccls](https://github.com/MaskRay/ccls/wiki/Visual-Studio-Code)
 ccls extensions
 
 ### 0.0.1
+### 0.0.4
+- fix: when `changeDatabaseCompiler` is empty, copy compdb file to workspace folder
 
 
 -----------------------------------------------------------------------------------------------------------

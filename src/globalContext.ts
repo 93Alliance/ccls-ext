@@ -108,6 +108,7 @@ export class GlobalContext implements Disposable {
         let compiler = "";
         let compilerValue = "";
         let enableChangeDbCompiler = false;
+        // 都为空代表直接复制
         if (os.platform() === "linux" && changeDbCompiler.linux.compiler !== "" && changeDbCompiler.linux.value !== "") {
             compiler = changeDbCompiler.linux.compiler;
             compilerValue = changeDbCompiler.linux.value;
@@ -121,6 +122,9 @@ export class GlobalContext implements Disposable {
         // 先要执行一次
         if (enableChangeDbCompiler) {
             this.changeDatabaseCompiler(dbPath, compiler, compilerValue);
+        } else {
+            const dstPath = this._srvCwd + '/compile_commands.json';
+            fs.writeFileSync(dstPath, fs.readFileSync(dbPath));
         }
 
         // resolve db_path in case it is a symlink, otherwise the file system watcher
