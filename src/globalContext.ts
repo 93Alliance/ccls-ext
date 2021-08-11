@@ -21,6 +21,7 @@ export class GlobalContext implements Disposable {
     private _server: ServerContext; // ccls服务实例
     private _isRunning = false; // ccls当前是否启动的标志
     private _srvCwd: string; // 打开的工作区目录
+    private _init = false;
     public constructor(
     ) {
         // 在日志输出窗口创建一个ccls的标签，vscode会为其分配一个窗口，用于显示ccls的日志。
@@ -132,14 +133,20 @@ export class GlobalContext implements Disposable {
         const dbWatcher = workspace.createFileSystemWatcher(dbRealPath, false, false, false);
         this._dispose.push(dbWatcher);
         dbWatcher.onDidChange(async (e: Uri) => {
+            if (!this._init) {
+                this._init = true;
+                return;
+            }
+
             if (enableChangeDbCompiler) {
                 this.changeDatabaseCompiler(dbPath, compiler, compilerValue);
                 if (this._isRunning) {
-                    await commands.executeCommand('ccls.restart');
+                    await this.restartCmd();
                 }
-            }
-            if (this._isRunning) {
-                await commands.executeCommand('ccls.restart');
+            } else {
+                if (this._isRunning) {
+                    await this.restartCmd();
+                }
             }
         });
     }

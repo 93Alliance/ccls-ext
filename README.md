@@ -44,6 +44,8 @@ ccls extensions
     "linux": ""
   }
   ```
+### 0.0.6
+- fix: On windows platform ccls cannot be killed, resulting in memory leaks
 
 -----------------------------------------------------------------------------------------------------------
 ## Following extension guidelines

@@ -221,7 +221,7 @@ export class ServerContext implements Disposable {
         }
 
         // 绑定工作区配置发生变化的回调，自定执行 onDidChangeConfiguration 函数
-        workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this, this._dispose);
+        // workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this, this._dispose);
         // 初始化客户端
         this.client = this.initClient();
         // 初始化协议
@@ -314,17 +314,38 @@ export class ServerContext implements Disposable {
 
     public async stop() {
         const pid = unwrap(this.clientPid);
+        logChan(`Server client id is ${this.clientPid}, killing`);
         const serverResponds = await Promise.race([
-            (async () => { await wait(300); return false; })(),
+            (async () => { await wait(1000); return false; })(),
             (async () => { await this.client.stop(); return true; })()
         ]);
+        // LanguageClient stop can't kill ccls
         // waitpid was called in client.stop
         if (!serverResponds) {
-            console.info('Server does not repsond, killing');
+            logChan('Server does not repsond, killing');
             try {
-                process.kill(pid, 'SIGTERM');
+                if (this.clientPid) {
+                    if (os.platform() === 'win32') {
+                        // cp.spawn('taskkill', ["/pid", pid.toString(), '/f', '/t']);
+                        cp.execSync('taskkill /pid ' + pid + ' /T /F');
+                    } else {
+                        process.kill(pid, 'SIGTERM');
+                    }
+                }
             } catch (e) {
-                console.info('Kill failed: ' + (e as Error).message);
+                logChan('Kill failed: ' + (e as Error).message);
+            }
+        } else {
+            if (this.clientPid) {
+                try {
+                    if (os.platform() === 'win32') {
+                        cp.execSync('taskkill /pid ' + pid + ' /T /F');
+                    } else {
+                        process.kill(pid, 'SIGTERM');
+                    }
+                } catch (e) {
+                    logChan('Kill failed: ' + (e as Error).message);
+                }
             }
         }
         this.clientPid = undefined;
