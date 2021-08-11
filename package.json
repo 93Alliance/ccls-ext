@@ -4,11 +4,12 @@
 	"description": "ccls extensions",
 	"license": "MIT",
 	"publisher": "flywine",
+	"icon": "resources/cclsext.png",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/93Alliance/ccls-ext"
 	},
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
