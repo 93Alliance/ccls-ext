@@ -3,7 +3,6 @@ import { ServerContext } from "./serverContext";
 import { disposeAll } from "./utils";
 import * as fs from 'fs';
 import * as os from 'os';
-import * as crypto from 'crypto';
 
 export let cclsChan: OutputChannel | undefined;
 

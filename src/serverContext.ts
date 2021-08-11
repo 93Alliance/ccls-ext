@@ -1,5 +1,5 @@
 import * as cp from "child_process";
-import * as fs from 'fs';
+import * as os from 'os';
 
 import {
     CancellationToken,
@@ -211,6 +211,15 @@ export class ServerContext implements Disposable {
             this.ignoredConf.push(".index.initialBlacklist");
             this.cliConfig.index.initialBlacklist = [".*"];
         }
+        // 解决resourceDir路径支持双系统配置
+        const config = workspace.getConfiguration('ccls');
+        const resourceDir = config.get('ext.resourceDir', {windows: "", linux: ""});
+        if (os.platform() === 'linux' && resourceDir.linux !== '') {
+            this.cliConfig.clang.resourceDir = resourceDir.linux;
+        } else if (os.platform() === 'win32' && resourceDir.windows !== '') {
+            this.cliConfig.clang.resourceDir = resourceDir.windows;
+        }
+
         // 绑定工作区配置发生变化的回调，自定执行 onDidChangeConfiguration 函数
         workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this, this._dispose);
         // 初始化客户端
