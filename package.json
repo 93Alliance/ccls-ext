@@ -9,7 +9,7 @@
 		"type": "git",
 		"url": "https://github.com/93Alliance/ccls-ext"
 	},
-	"version": "0.0.6",
+	"version": "0.0.8",
 	"engines": {
 		"vscode": "^1.59.0"
 	},

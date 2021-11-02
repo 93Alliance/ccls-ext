@@ -14,6 +14,17 @@ export function logChan(msg: string) {
     cclsChan.appendLine(msg);
 }
 
+export interface ChangeDbCompiler {
+    windows: {
+        compiler: string,
+        value: string
+    },
+    linux: {
+        compiler: string,
+        value: string
+    }
+}
+
 
 export class GlobalContext implements Disposable {
     public readonly chan: OutputChannel; // 日志输出通道
@@ -53,18 +64,24 @@ export class GlobalContext implements Disposable {
                 value: ""
             }
         };
-        const changeDbCompiler = config.get('ext.changeDatabaseCompiler', defaultChangeDbCompiler);
-        const restartOnCmakeConfigured = config.get<boolean>('ext.restartDatabaseOnChange', true);
+        const changeDbCompiler = config.get<ChangeDbCompiler>('ext.changeDatabaseCompiler', defaultChangeDbCompiler);
+        const restartOnCmakeConfigured = config.get<boolean>('ext.restartDatabaseOnChange', false);
         if (restartOnCmakeConfigured) {
             const cmaketoolsConfig = workspace.getConfiguration('cmake');
             const cmaketoolsCompilePath = cmaketoolsConfig.get<string>('copyCompileCommands', "");
-            if (cmaketoolsCompilePath === "") {
+            if (cmaketoolsCompilePath === "") { 
                 window.showWarningMessage('cmake copyCompileCommands is empty');
             } else {
                 logChan('[info]: start watch database file');
                 var re = /\${workspaceFolder}/gi;
                 const dbPath = cmaketoolsCompilePath.replace(re, this._srvCwd);
-                this.wathDatabaseFileChanged(dbPath, changeDbCompiler);
+                fs.access(dbPath, fs.constants.F_OK, (err) => {
+                    if (err) {
+                        logChan(`[info]: the ${dbPath} is not exist`);
+                        fs.closeSync(fs.openSync(dbPath, 'w'));
+                    }
+                    this.wathDatabaseFileChanged(dbPath, changeDbCompiler);
+                });
             }
         }
     }
@@ -133,19 +150,24 @@ export class GlobalContext implements Disposable {
         const dbWatcher = workspace.createFileSystemWatcher(dbRealPath, false, false, false);
         this._dispose.push(dbWatcher);
         dbWatcher.onDidChange(async (e: Uri) => {
-            if (!this._init) {
-                this._init = true;
-                return;
-            }
+            // if (!this._init) {
+            //     this._init = true;
+            //     return;
+            // }
 
             if (enableChangeDbCompiler) {
                 this.changeDatabaseCompiler(dbPath, compiler, compilerValue);
                 if (this._isRunning) {
-                    await this.restartCmd();
+                    // await this.restartCmd();
+                    await commands.executeCommand('ccls.restart');
                 }
             } else {
+                const data = fs.readFileSync(dbPath, 'utf8').toString();
+                const dstPath = this._srvCwd + '/compile_commands.json';
+                fs.writeFileSync(dstPath, data);
                 if (this._isRunning) {
-                    await this.restartCmd();
+                    // await this.restartCmd();
+                    await commands.executeCommand('ccls.restart');
                 }
             }
         });
@@ -162,7 +184,6 @@ export class GlobalContext implements Disposable {
         }
 
         let result = JSON.stringify(compileCommands);
-        // 这个会导致onDidChange重新发生变化
         const dstPath = this._srvCwd + '/compile_commands.json';
         fs.writeFileSync(dstPath, result);
     }

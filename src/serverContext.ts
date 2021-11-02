@@ -308,8 +308,6 @@ export class ServerContext implements Disposable {
         }
 
         this._dispose.push(commands.registerCommand("ccls.reload", this.reloadIndex, this));
-
-        
     }
 
     public async stop() {
@@ -327,7 +325,8 @@ export class ServerContext implements Disposable {
                 if (this.clientPid) {
                     if (os.platform() === 'win32') {
                         // cp.spawn('taskkill', ["/pid", pid.toString(), '/f', '/t']);
-                        cp.execSync('taskkill /pid ' + pid + ' /T /F');
+                        const buff = cp.execSync('taskkill /pid ' + pid + ' /T /F');
+                        logChan(buff.toString('utf-8'));
                     } else {
                         process.kill(pid, 'SIGTERM');
                     }
@@ -339,7 +338,8 @@ export class ServerContext implements Disposable {
             if (this.clientPid) {
                 try {
                     if (os.platform() === 'win32') {
-                        cp.execSync('taskkill /pid ' + pid + ' /T /F');
+                        const buff = cp.execSync('taskkill /pid ' + pid + ' /T /F');
+                        logChan(buff.toString('utf-8'));
                     } else {
                         process.kill(pid, 'SIGTERM');
                     }
