@@ -6,44 +6,34 @@ import { GlobalContext } from './globalContext';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
-	const cmakeTools = vscode.extensions.getExtension('ms-vscode.cmake-tools');
-	if (cmakeTools) {
-		if (!cmakeTools.isActive) {
-			let activeCounter = 0;
-			await new Promise<void>((resolve) => {
-				const isActive = () => {
-					if (cmakeTools && cmakeTools.isActive) {
-						return resolve();
-					}
-					activeCounter++;
-					if (activeCounter > 15) { // ~15 seconds timeout
-						return resolve(); // waiting for cmake tools timed out
-					}
-					setTimeout(isActive, 1000);
-				};
-				isActive();
-			});
+	// const cmakeTools = vscode.extensions.getExtension('ms-vscode.cmake-tools');
+	// if (cmakeTools) {
+	// 	if (!cmakeTools.isActive) {
+	// 		let activeCounter = 0;
+	// 		await new Promise<void>((resolve) => {
+	// 			const isActive = () => {
+	// 				if (cmakeTools && cmakeTools.isActive) {
+	// 					return resolve();
+	// 				}
+	// 				activeCounter++;
+	// 				if (activeCounter > 15) { // ~15 seconds timeout
+	// 					return resolve(); // waiting for cmake tools timed out
+	// 				}
+	// 				setTimeout(isActive, 1000);
+	// 			};
+	// 			isActive();
+	// 		});
 
-		}
-	} else {
-		await vscode.window.showWarningMessage('cmake tools extension is not installed or enabled');
-		return;
-	}
+	// 	}
+	// } else {
+	// 	await vscode.window.showWarningMessage('cmake tools extension is not installed or enabled');
+	// 	return;
+	// }
 	// TODO: 垃圾cmake-tools一直没开放API，fuck
 	// let cmakeToolsApi = cmakeTools?.exports;
 	// cmakeToolsApi.onReconfigured(() => {
 	// 	console.log("cmake tools configure complete!");
 	// });
-
-
-
-	// const wss = workspace.workspaceFolders;
-	// if (!wss || wss.length === 0) { throw Error("No workspace opened"); }
-	// const ctx = new Cclsext(wss[0].uri.fsPath);
-
-	// await ctx.start();
-
-	// context.subscriptions.push(ctx);
 
 	// 构建ccls插件全局对象
 	const ctx = new GlobalContext();

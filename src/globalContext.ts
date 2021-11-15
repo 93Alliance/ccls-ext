@@ -1,8 +1,9 @@
-import { commands, Disposable, OutputChannel, window, workspace, Uri } from 'vscode';
+import { commands, Disposable, OutputChannel, window, workspace, Uri, SnippetString, WorkspaceEdit, TextDocument, TextEditor } from 'vscode';
 import { ServerContext } from "./serverContext";
-import { disposeAll } from "./utils";
+import { canWriteFile, disposeAll, genDestructor, isFileExisted, isHeader, unwrap } from "./utils";
 import * as fs from 'fs';
 import * as os from 'os';
+import * as path from 'path';
 
 export let cclsChan: OutputChannel | undefined;
 
@@ -69,21 +70,32 @@ export class GlobalContext implements Disposable {
         if (restartOnCmakeConfigured) {
             const cmaketoolsConfig = workspace.getConfiguration('cmake');
             const cmaketoolsCompilePath = cmaketoolsConfig.get<string>('copyCompileCommands', "");
-            if (cmaketoolsCompilePath === "") { 
+            if (cmaketoolsCompilePath === "") {
                 window.showWarningMessage('cmake copyCompileCommands is empty');
             } else {
                 logChan('[info]: start watch database file');
                 var re = /\${workspaceFolder}/gi;
                 const dbPath = cmaketoolsCompilePath.replace(re, this._srvCwd);
+                // 检查路径文件是否存在
                 fs.access(dbPath, fs.constants.F_OK, (err) => {
                     if (err) {
                         logChan(`[info]: the ${dbPath} is not exist`);
-                        fs.closeSync(fs.openSync(dbPath, 'w'));
+                        // fs.closeSync(fs.openSync(dbPath, 'w'));
+                        fs.writeFile(dbPath, "", 'utf8', (error) => {
+                            if (error) {
+                                logChan(`error: failed create source file`);
+                            }
+                        });
                     }
                     this.wathDatabaseFileChanged(dbPath, changeDbCompiler);
                 });
             }
         }
+
+        // cpphelper
+        this._dispose.push(commands.registerCommand('ccls.createHeaderGuard', this.createHeaderGuard, this));
+        this._dispose.push(commands.registerCommand("ccls.createImplementation", this.createImplementation, this));
+        this.listenHeaderGuard();
     }
 
     // 销毁函数
@@ -99,6 +111,87 @@ export class GlobalContext implements Disposable {
 
         await this._server.start();
         this._isRunning = true;
+    }
+
+    public async createImplementation() {
+        const editor = unwrap(window.activeTextEditor, "window.activeTextEditor");
+        const uri = editor.document.uri;
+
+        const lensesObjs = await this._server.hoverCommand();
+
+        if (!lensesObjs || lensesObjs.contents.length === 0) {
+            return;
+        }
+
+        // 获取文件扩展名
+        let extName = path.extname(uri.path);
+        // 获取文件名
+        const fileName = path.basename(uri.path, extName);
+        // 获取文件夹名
+        const dirName = path.dirname(uri.path);
+
+        let sourceExtName = "";
+        if (extName === ".hpp") {
+            sourceExtName = ".cpp";
+        } else if (extName === ".h") {
+            sourceExtName = ".c";
+        } else {
+            return;
+        }
+
+        // 判断源文件是否存在
+        const sourceFile = dirName + "/" + fileName + sourceExtName;
+        // /^\[.*\]$/
+        let funcSignature = lensesObjs.contents[0].value;
+        const destructFunc = new RegExp("^class.*{}$");
+        if (destructFunc.test(funcSignature)) {
+            // class KKK::Name{} => KKK::Name::~Name() {}
+            funcSignature = genDestructor(funcSignature);
+        }
+        let workspaceEdit = new WorkspaceEdit();
+        workspaceEdit.createFile(Uri.file(sourceFile), { overwrite: false, ignoreIfExists: true });
+        workspace.applyEdit(workspaceEdit).then((result: boolean) => {
+            let sourceData = "\n" + funcSignature + "\n";
+            sourceData += "{\n}\n";
+            if (result) { // 如果源文件不存在
+                return workspace.openTextDocument(sourceFile).then((doc: TextDocument) => {
+                    window.showTextDocument(doc, 1, true).then((textEditor: TextEditor) => {
+                        textEditor.insertSnippet(new SnippetString("#include \"" + fileName + extName + "\"\n"))
+                            .then(() => {
+                                textEditor.insertSnippet(
+                                    new SnippetString(sourceData), textEditor.document.positionAt(textEditor.document.getText().length));
+                            });
+                    });
+                });
+            }
+            if (window.activeTextEditor) { // 如果源文件已经存在
+                workspace.openTextDocument(sourceFile).then((doc: TextDocument) => {
+                    window.showTextDocument(doc).then((textEditor: TextEditor) => {
+                        textEditor.insertSnippet(
+                            new SnippetString(sourceData), textEditor.document.positionAt(textEditor.document.getText().length));
+                    });
+                });
+            }
+        });
+    }
+
+    public async createHeaderGuard() {
+        if (window.activeTextEditor && window.activeTextEditor.selection) {
+            let fileName = window.activeTextEditor?.document.fileName;
+            let name = fileName.replace(/^.*[\\\/]/, '').replace(/\.[^\.]+$/, '');
+            let headerGuard: any = workspace.getConfiguration("ccls").get<string>('cpphelper.headerGuardPattern');
+            headerGuard = headerGuard.replace('{FILE}', name.toUpperCase());
+            if (window.activeTextEditor) {
+                window.activeTextEditor.insertSnippet(
+                    new SnippetString('\n#endif // ' + headerGuard),
+                    window.activeTextEditor.document.positionAt(window.activeTextEditor.document.getText().length)
+                );
+                window.activeTextEditor.insertSnippet(
+                    new SnippetString('#ifndef ' + headerGuard + '\n#define ' + headerGuard + '\n\n'),
+                    window.activeTextEditor.document.positionAt(0)
+                );
+            }
+        }
     }
 
     // 停止服务
@@ -158,16 +251,14 @@ export class GlobalContext implements Disposable {
             if (enableChangeDbCompiler) {
                 this.changeDatabaseCompiler(dbPath, compiler, compilerValue);
                 if (this._isRunning) {
-                    // await this.restartCmd();
-                    await commands.executeCommand('ccls.restart');
+                    await commands.executeCommand('ccls.reload');
                 }
             } else {
                 const data = fs.readFileSync(dbPath, 'utf8').toString();
                 const dstPath = this._srvCwd + '/compile_commands.json';
                 fs.writeFileSync(dstPath, data);
                 if (this._isRunning) {
-                    // await this.restartCmd();
-                    await commands.executeCommand('ccls.restart');
+                    await commands.executeCommand('ccls.reload');
                 }
             }
         });
@@ -186,5 +277,22 @@ export class GlobalContext implements Disposable {
         let result = JSON.stringify(compileCommands);
         const dstPath = this._srvCwd + '/compile_commands.json';
         fs.writeFileSync(dstPath, result);
+    }
+
+    private listenHeaderGuard() {
+        /*When adding a new header file, automatically invoke insertIncludeGuard() */
+        this._dispose.push(workspace.onDidCreateFiles(
+            async (event) => {
+                if (workspace.getConfiguration("ccls").get<boolean>('cpphelper.autoCreateHeaderGuard')) {
+                    for (const newFile of event.files) {
+                        if (isHeader(newFile)) {
+                            workspace.openTextDocument(newFile).then(doc =>
+                                window.showTextDocument(doc).then(this.createHeaderGuard)
+                            );
+                        }
+                    }
+                }
+            }
+        ));
     }
 }

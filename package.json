@@ -9,7 +9,7 @@
 		"type": "git",
 		"url": "https://github.com/93Alliance/ccls-ext"
 	},
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
@@ -233,6 +233,16 @@
 				"title": "Go to Tree View Entry",
 				"category": "ccls",
 				"command": "ccls.gotoForTreeView"
+			},
+			{
+				"command": "ccls.createImplementation",
+				"category": "ccls",
+				"title": "Create Implementation"
+			},
+			{
+				"command": "ccls.createHeaderGuard",
+				"category": "ccls",
+				"title": "Create header guard"
 			}
 		],
 		"configuration": {
@@ -714,6 +724,21 @@
 						"linux": ""
 					},
 					"description": "Default value to use for clang -resource-dir argument. This will be automatically supplied by ccls if not provided."
+				},
+				"ccls.cpphelper.contextCreateImplementation": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show \"Create Implementation\" in context menu"
+				},
+				"ccls.cpphelper.headerGuardPattern": {
+					"type": "string",
+					"default": "{FILE}_HPP",
+					"description": "Header Guard Style."
+				},
+				"ccls.cpphelper.autoCreateHeaderGuard": {
+					"type": "boolean",
+					"default": true,
+					"description": "The header guard is automatically created when the file is created."
 				}
 			}
 		}

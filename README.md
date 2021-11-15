@@ -29,6 +29,7 @@ Reference [vscode-ccls](https://github.com/MaskRay/ccls/wiki/Visual-Studio-Code)
 
 ## Known Issues
 
+- ccls failed and quit
 
 ## Release Notes
 ccls extensions
@@ -46,6 +47,19 @@ ccls extensions
   ```
 ### 0.0.6
 - fix: On windows platform ccls cannot be killed, resulting in memory leaks
+
+### 0.0.7
+
+### 0.0.8 
+- fix: database command json file is not exist
+
+### 0.0.9
+- fix: Plugin runtime error
+- add: The header guard is automatically created when the header file is created.
+- add: Create function implementation, support:
+  - global function √
+  - normal calss member function √
+  - normal class special member function √
 
 -----------------------------------------------------------------------------------------------------------
 ## Following extension guidelines

@@ -1,5 +1,7 @@
 import * as cp from "child_process";
 import * as os from 'os';
+import * as path from 'path';
+import * as fs from 'fs';
 
 import {
     CancellationToken,
@@ -39,7 +41,7 @@ import { InactiveRegionsProvider } from "./inactiveRegions";
 import { PublishSemanticHighlightArgs, SemanticContext, semanticKinds } from "./semantic";
 import { StatusBarIconProvider } from "./statusBarIcon";
 import { ClientConfig, IHierarchyNode } from './types';
-import { disposeAll, normalizeUri, unwrap, wait } from "./utils";
+import { canReadFile, canWriteFile, disposeAll, genDestructor, isFileExisted, normalizeUri, unwrap, wait } from "./utils";
 import { jumpToUriAtPosition } from "./vscodeUtils";
 
 interface LastGoto {
@@ -213,7 +215,7 @@ export class ServerContext implements Disposable {
         }
         // 解决resourceDir路径支持双系统配置
         const config = workspace.getConfiguration('ccls');
-        const resourceDir = config.get('ext.resourceDir', {windows: "", linux: ""});
+        const resourceDir = config.get('ext.resourceDir', { windows: "", linux: "" });
         if (os.platform() === 'linux' && resourceDir.linux !== '') {
             this.cliConfig.clang.resourceDir = resourceDir.linux;
         } else if (os.platform() === 'win32' && resourceDir.windows !== '') {
@@ -693,5 +695,18 @@ export class ServerContext implements Disposable {
                     false /*preserveFocus*/);
             }
         };
+    }
+
+    public async hoverCommand() {
+        const editor = unwrap(window.activeTextEditor, "window.activeTextEditor");
+        const position = editor.selection.active;
+        const uri = editor.document.uri;
+        // 这里要解决不是头文件怎么办
+        return this.client.sendRequest<any>('textDocument/hover', {
+            position,
+            textDocument: {
+                uri: uri.toString(true),
+            },
+        });
     }
 }
