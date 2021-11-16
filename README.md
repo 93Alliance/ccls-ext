@@ -65,7 +65,10 @@ ccls extensions
 - add: create cpp class header and source file.
 - add: rename file auto modify header guard.
 - fix: check file exist error.
-- fix: 
+### 0.1.1
+- add: create unit test file
+- add: cmake build output colorize（support chinese and english）
+
 
 -----------------------------------------------------------------------------------------------------------
 ## Following extension guidelines

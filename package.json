@@ -9,7 +9,7 @@
 		"type": "git",
 		"url": "https://github.com/93Alliance/ccls-ext"
 	},
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
@@ -139,6 +139,11 @@
 					"command": "ccls.createCppClass",
 					"group": "cpphelper@1",
 					"when": "explorerResourceIsFolder"
+				},
+				{
+					"command": "ccls.createUnitTest",
+					"group": "cpphelper@2",
+					"when": "explorerResourceIsFolder"
 				}
 			]
 		},
@@ -249,6 +254,11 @@
 				"command": "ccls.createCppClass",
 				"category": "ccls",
 				"title": "Create cpp class"
+			},
+			{
+				"command": "ccls.createUnitTest",
+				"category": "ccls",
+				"title": "Create unit test file"
 			}
 		],
 		"configuration": {
@@ -747,7 +757,33 @@
 					"description": "The header guard is automatically created when the file is created."
 				}
 			}
-		}
+		},
+		"languages": [
+			{
+				"id": "Log",
+				"aliases": [
+					"log"
+				],
+				"extensions": [
+					".log"
+				],
+				"configuration": "./src/output/log.configuration.json",
+				"mimetypes": [
+					"log",
+					"text/log",
+					"text/x-log",
+					"text/x-code-output",
+					"x-code-output"
+				]
+			}
+		],
+		"grammars": [
+            {
+                "language": "Log",
+                "scopeName": "code.log",
+                "path": "./src/output/log.tmLanguage"
+            }
+        ]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",

@@ -4,7 +4,7 @@ import { disposeAll, genDestructor, isHeader, isOpenedInEditor, unwrap } from ".
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { classTemplate, findHeaderGuardLinesToRemove, getHeaderGuard } from './cpphelper';
+import { classTemplate, findHeaderGuardLinesToRemove, getHeaderGuard, unitTestTemplate } from './cpphelper';
 
 export let cclsChan: OutputChannel | undefined;
 
@@ -97,6 +97,12 @@ export class GlobalContext implements Disposable {
                 const dirPath = uri.fsPath;
                 this.createClass(dirPath);
             }));
+        this._dispose.push(commands.registerCommand("ccls.createUnitTest",
+            (uri: Uri) => {
+                const dirPath = uri.fsPath;
+                this.createUnitTest(dirPath);
+            }));
+
         this.listenHeaderGuard();
     }
 
@@ -346,7 +352,7 @@ export class GlobalContext implements Disposable {
                 password: false, // 输入内容是否是密码
                 ignoreFocusOut: false, // 默认false，设置为true时鼠标点击别的地方输入框不会消失
                 placeHolder: '', // 在输入框内的提示信息
-                prompt: 'Please class name', // 在输入框下方的提示信息
+                prompt: 'Please input class name', // 在输入框下方的提示信息
                 // validateInput: (text) => { return text; } // 对输入内容进行验证并返回
             }).then(async (className) => {
                 if (className === undefined) {
@@ -379,6 +385,36 @@ export class GlobalContext implements Disposable {
                 });
             }, (rej) => {
 
+            });
+        }
+        catch (err) {
+            console.error(err);
+        }
+    }
+
+    // 创建单元测试文件
+    private async createUnitTest(dir: string) {
+        try {
+            window.showInputBox({
+                password: false, // 输入内容是否是密码
+                ignoreFocusOut: false, // 默认false，设置为true时鼠标点击别的地方输入框不会消失
+                placeHolder: '', // 在输入框内的提示信息
+                prompt: 'Please input file name', // 在输入框下方的提示信息
+                // validateInput: (text) => { return text; } // 对输入内容进行验证并返回
+            }).then(async (fileName) => {
+                if (fileName === undefined) {
+                    return;
+                }
+                fileName = fileName.toLowerCase();
+                const sourceFile = dir + "/test_" + fileName + ".cpp";
+                fs.access(sourceFile, fs.constants.F_OK, (err) => {
+                    if (err) { // 不存在
+                        const content = unitTestTemplate(fileName!); // 不可能为undefined
+                        fs.writeFileSync(sourceFile, content, 'utf8');
+                    } else {
+                        window.showErrorMessage(`The test_${fileName}.cpp already exists.`);
+                    }
+                });
             });
         }
         catch (err) {

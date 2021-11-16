@@ -1,4 +1,5 @@
 import { window, workspace } from "vscode";
+import { fistLetterUpper } from "./utils";
 
 // 讲文件名转换为header guard
 export function getHeaderGuard(fileName: string): string {
@@ -15,6 +16,17 @@ public:
     ~${className}();
 private:
 };`;
+}
+
+export function unitTestTemplate(fileName: string): string {
+    return `#include "benchmark/benchmark.h"
+#include "gtest/gtest.h"
+
+TEST(Test${fistLetterUpper(fileName)}, base)
+{
+
+}
+`;
 }
 
 // 查找文件中的header guard位置

@@ -108,9 +108,12 @@ export function isHeader(file: Uri): boolean {
 }
 
 // 检查文件当前是否显示在编辑器中
-export function isOpenedInEditor(file: Uri) : boolean
-{
-    return workspace.textDocuments.some(doc => {
-      return doc.uri.toString() === file.toString();
-    });
+export function isOpenedInEditor(file: Uri): boolean {
+  return workspace.textDocuments.some(doc => {
+    return doc.uri.toString() === file.toString();
+  });
 }
+
+export function fistLetterUpper(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
