@@ -1,9 +1,10 @@
-import { commands, Disposable, OutputChannel, window, workspace, Uri, SnippetString, WorkspaceEdit, TextDocument, TextEditor } from 'vscode';
+import { commands, Disposable, OutputChannel, window, workspace, Uri, SnippetString, WorkspaceEdit, TextDocument, TextEditor, Range, Position } from 'vscode';
 import { ServerContext } from "./serverContext";
-import { canWriteFile, disposeAll, genDestructor, isFileExisted, isHeader, unwrap } from "./utils";
+import { disposeAll, genDestructor, isHeader, isOpenedInEditor, unwrap } from "./utils";
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { classTemplate, findHeaderGuardLinesToRemove, getHeaderGuard } from './cpphelper';
 
 export let cclsChan: OutputChannel | undefined;
 
@@ -78,14 +79,10 @@ export class GlobalContext implements Disposable {
                 const dbPath = cmaketoolsCompilePath.replace(re, this._srvCwd);
                 // 检查路径文件是否存在
                 fs.access(dbPath, fs.constants.F_OK, (err) => {
-                    if (err) {
+                    if (err) { // 不存在
                         logChan(`[info]: the ${dbPath} is not exist`);
                         // fs.closeSync(fs.openSync(dbPath, 'w'));
-                        fs.writeFile(dbPath, "", 'utf8', (error) => {
-                            if (error) {
-                                logChan(`error: failed create source file`);
-                            }
-                        });
+                        fs.writeFileSync(dbPath, "", 'utf8');
                     }
                     this.wathDatabaseFileChanged(dbPath, changeDbCompiler);
                 });
@@ -95,6 +92,11 @@ export class GlobalContext implements Disposable {
         // cpphelper
         this._dispose.push(commands.registerCommand('ccls.createHeaderGuard', this.createHeaderGuard, this));
         this._dispose.push(commands.registerCommand("ccls.createImplementation", this.createImplementation, this));
+        this._dispose.push(commands.registerCommand("ccls.createCppClass",
+            (uri: Uri) => {
+                const dirPath = uri.fsPath;
+                this.createClass(dirPath);
+            }));
         this.listenHeaderGuard();
     }
 
@@ -178,9 +180,7 @@ export class GlobalContext implements Disposable {
     public async createHeaderGuard() {
         if (window.activeTextEditor && window.activeTextEditor.selection) {
             let fileName = window.activeTextEditor?.document.fileName;
-            let name = fileName.replace(/^.*[\\\/]/, '').replace(/\.[^\.]+$/, '');
-            let headerGuard: any = workspace.getConfiguration("ccls").get<string>('cpphelper.headerGuardPattern');
-            headerGuard = headerGuard.replace('{FILE}', name.toUpperCase());
+            const headerGuard = getHeaderGuard(fileName);
             if (window.activeTextEditor) {
                 window.activeTextEditor.insertSnippet(
                     new SnippetString('\n#endif // ' + headerGuard),
@@ -265,34 +265,124 @@ export class GlobalContext implements Disposable {
     }
 
     private changeDatabaseCompiler(dbPath: string, compiler: string, compilerValue: string) {
-        logChan('[info]: changeDatabaseCompiler');
-        let re = new RegExp(`^.*${compiler}`);
-        const data = fs.readFileSync(dbPath, 'utf8').toString();
-        let compileCommands = JSON.parse(data);
-        for (let index = 0; index < compileCommands.length; index++) {
-            let element = compileCommands[index];
-            element.command = element.command.replace(re, compilerValue);
-        }
+        try {
+            logChan('[info]: changeDatabaseCompiler');
+            let re = new RegExp(`^.*${compiler}`);
+            const data = fs.readFileSync(dbPath, 'utf8').toString();
+            let compileCommands = JSON.parse(data);
+            for (let index = 0; index < compileCommands.length; index++) {
+                let element = compileCommands[index];
+                element.command = element.command.replace(re, compilerValue);
+            }
 
-        let result = JSON.stringify(compileCommands);
-        const dstPath = this._srvCwd + '/compile_commands.json';
-        fs.writeFileSync(dstPath, result);
+            let result = JSON.stringify(compileCommands);
+            const dstPath = this._srvCwd + '/compile_commands.json';
+            fs.writeFileSync(dstPath, result);
+        }
+        catch (err) {
+            console.error(err);
+        }
     }
 
     private listenHeaderGuard() {
+        if (!workspace.getConfiguration("ccls").get<boolean>('cpphelper.autoCreateHeaderGuard')) {
+            return;
+        }
         /*When adding a new header file, automatically invoke insertIncludeGuard() */
         this._dispose.push(workspace.onDidCreateFiles(
             async (event) => {
-                if (workspace.getConfiguration("ccls").get<boolean>('cpphelper.autoCreateHeaderGuard')) {
-                    for (const newFile of event.files) {
-                        if (isHeader(newFile)) {
-                            workspace.openTextDocument(newFile).then(doc =>
-                                window.showTextDocument(doc).then(this.createHeaderGuard)
-                            );
-                        }
+                for (const newFile of event.files) {
+                    if (isHeader(newFile)) {
+                        workspace.openTextDocument(newFile).then(doc =>
+                            window.showTextDocument(doc).then(this.createHeaderGuard)
+                        );
                     }
                 }
             }
         ));
+        // 重命名时修改header guard
+        this._dispose.push(workspace.onDidRenameFiles(event => {
+            for (const renamedFile of event.files) {
+                if (isHeader(renamedFile.newUri) && isOpenedInEditor(renamedFile.newUri)) {
+                    workspace.openTextDocument(renamedFile.newUri).then(doc => {
+                        const editor = window.activeTextEditor;
+                        if (editor === undefined) {
+                            return;
+                        }
+                        const linesToRemove = findHeaderGuardLinesToRemove();
+                        if (linesToRemove.length !== 0) {
+                            editor.edit((edit) => {
+                                let fileName = window.activeTextEditor?.document.fileName;
+                                if (fileName === undefined) {
+                                    return;
+                                }
+                                const headerGuard = getHeaderGuard(fileName);
+
+                                const directives = [
+                                    "#ifndef " + headerGuard + "\n",
+                                    "#define " + headerGuard + "\n",
+                                    "#endif" + " // " + headerGuard + "\n",
+                                ];
+                                for (let i = 0; i < 3; ++i) {
+                                    edit.replace(
+                                        new Range(new Position(linesToRemove[i], 0), new Position(linesToRemove[i] + 1, 0)),
+                                        directives[i]
+                                    );
+                                }
+                            });
+                        } else {
+                            this.createHeaderGuard();
+                        }
+                    });
+                }
+            }
+        }));
+    }
+
+    // 创建类文件
+    private async createClass(dir: string) {
+        try {
+            window.showInputBox({
+                password: false, // 输入内容是否是密码
+                ignoreFocusOut: false, // 默认false，设置为true时鼠标点击别的地方输入框不会消失
+                placeHolder: '', // 在输入框内的提示信息
+                prompt: 'Please class name', // 在输入框下方的提示信息
+                // validateInput: (text) => { return text; } // 对输入内容进行验证并返回
+            }).then(async (className) => {
+                if (className === undefined) {
+                    return;
+                }
+                // 获取header guard
+                const headerGuard = getHeaderGuard(className);
+                // 创建文件
+                const headerFile = dir + "/" + className + ".hpp";
+                const sourceFile = dir + "/" + className + ".cpp";
+
+                fs.access(headerFile, fs.constants.F_OK, (err) => {
+                    if (err) { // 不存在
+                        let content = "#ifndef " + headerGuard + "\n" + "#define " + headerGuard + "\n";
+                        // 追加class
+                        content += classTemplate(className);
+                        content += "\n#endif" + " // " + headerGuard + "\n";
+                        fs.writeFileSync(headerFile, content, 'utf8');
+                    } else {
+                        window.showErrorMessage(`The ${className}.hpp already exists.`);
+                    }
+                    fs.access(sourceFile, fs.constants.F_OK, (err) => {
+                        if (err) { // 不存在
+                            const content = "#include \"" + className + ".hpp" + "\"\n";
+                            fs.writeFileSync(sourceFile, content, 'utf8');
+                        } else {
+                            window.showErrorMessage(`The ${className}.cpp already exists.`);
+                        }
+                    });
+                });
+            }, (rej) => {
+
+            });
+        }
+        catch (err) {
+            console.error(err);
+        }
     }
 }

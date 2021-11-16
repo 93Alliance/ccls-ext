@@ -9,7 +9,7 @@
 		"type": "git",
 		"url": "https://github.com/93Alliance/ccls-ext"
 	},
-	"version": "0.0.9",
+	"version": "0.1.0",
 	"engines": {
 		"vscode": "^1.59.0"
 	},
@@ -24,13 +24,7 @@
 		"clang"
 	],
 	"activationEvents": [
-		"onLanguage:c",
-		"onLanguage:cpp",
-		"onLanguage:objective-c",
-		"onLanguage:objective-cpp",
-		"workspaceContains:.ccls",
-		"workspaceContains:compile_commands.json",
-		"workspaceContains:**/CMakeLists.txt"
+		"workspaceContains:CMakeLists.txt"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -139,6 +133,13 @@
 					"command": "ccls.call.useCallees",
 					"when": "false"
 				}
+			],
+			"explorer/context": [
+				{
+					"command": "ccls.createCppClass",
+					"group": "cpphelper@1",
+					"when": "explorerResourceIsFolder"
+				}
 			]
 		},
 		"commands": [
@@ -243,6 +244,11 @@
 				"command": "ccls.createHeaderGuard",
 				"category": "ccls",
 				"title": "Create header guard"
+			},
+			{
+				"command": "ccls.createCppClass",
+				"category": "ccls",
+				"title": "Create cpp class"
 			}
 		],
 		"configuration": {

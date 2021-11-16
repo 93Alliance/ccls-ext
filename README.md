@@ -61,6 +61,12 @@ ccls extensions
   - normal calss member function √
   - normal class special member function √
 
+### 0.1.0
+- add: create cpp class header and source file.
+- add: rename file auto modify header guard.
+- fix: check file exist error.
+- fix: 
+
 -----------------------------------------------------------------------------------------------------------
 ## Following extension guidelines
 

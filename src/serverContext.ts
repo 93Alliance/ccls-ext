@@ -41,7 +41,7 @@ import { InactiveRegionsProvider } from "./inactiveRegions";
 import { PublishSemanticHighlightArgs, SemanticContext, semanticKinds } from "./semantic";
 import { StatusBarIconProvider } from "./statusBarIcon";
 import { ClientConfig, IHierarchyNode } from './types';
-import { canReadFile, canWriteFile, disposeAll, genDestructor, isFileExisted, normalizeUri, unwrap, wait } from "./utils";
+import { disposeAll, isHeader, normalizeUri, unwrap, wait } from "./utils";
 import { jumpToUriAtPosition } from "./vscodeUtils";
 
 interface LastGoto {
@@ -223,7 +223,7 @@ export class ServerContext implements Disposable {
         }
 
         // 绑定工作区配置发生变化的回调，自定执行 onDidChangeConfiguration 函数
-        // workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this, this._dispose);
+        workspace.onDidChangeConfiguration(this.onDidChangeConfiguration, this, this._dispose);
         // 初始化客户端
         this.client = this.initClient();
         // 初始化协议
@@ -481,6 +481,7 @@ export class ServerContext implements Disposable {
         const clientOptions: LanguageClientOptions = {
             diagnosticCollectionName: 'ccls',
             documentSelector: ['c', 'cpp', 'objective-c', 'objective-cpp'],
+            // 通知服务端文件更改
             // synchronize: {
             // 	configurationSection: 'ccls',
             // 	fileEvents: workspace.createFileSystemWatcher('**/.cc')
@@ -701,7 +702,10 @@ export class ServerContext implements Disposable {
         const editor = unwrap(window.activeTextEditor, "window.activeTextEditor");
         const position = editor.selection.active;
         const uri = editor.document.uri;
-        // 这里要解决不是头文件怎么办
+        // 不是头文件忽略
+        if (!isHeader(uri)) {
+            return;
+        }
         return this.client.sendRequest<any>('textDocument/hover', {
             position,
             textDocument: {

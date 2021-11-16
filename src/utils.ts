@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as util from "util";
-import { commands, Disposable, Uri } from "vscode";
+import { commands, Disposable, Uri, window, workspace } from "vscode";
 import * as cp from "child_process";
 import * as fs from 'fs';
 
@@ -51,41 +51,41 @@ export async function hasVscodeCommand(cmd: string): Promise<boolean> {
   return new Promise<boolean>((resolve, reject) => { return resolve(false); });
 }
 
-export function isFileExisted(path: string) {
-  return new Promise((resolve, reject) => {
-    fs.access(path, (err: any) => {
-      if (err) {
-        reject(false);//"不存在"
-      } else {
-        resolve(true);//"存在"
-      }
-    });
-  });
-};
+// export function isFileExisted(path: string) {
+//   return new Promise((resolve, reject) => {
+//     fs.access(path, fs.constants.F_OK, (err: any) => {
+//       if (err) {
+//         reject(false);//"不存在"
+//       } else {
+//         resolve(true);//"存在"
+//       }
+//     });
+//   });
+// };
 
-export function canReadFile(path: string) {
-  return new Promise((resolve, reject) => {
-    fs.access(path, fs.constants.R_OK, (err: any) => {
-      if (err) {
-        reject(false);//"不可读"
-      } else {
-        resolve(true);//"可读"
-      }
-    });
-  });
-}
+// export function canReadFile(path: string) {
+//   return new Promise((resolve, reject) => {
+//     fs.access(path, fs.constants.R_OK, (err: any) => {
+//       if (err) {
+//         reject(false);//"不可读"
+//       } else {
+//         resolve(true);//"可读"
+//       }
+//     });
+//   });
+// }
 
-export function canWriteFile(path: string) {
-  return new Promise((resolve, reject) => {
-    fs.access(path, fs.constants.W_OK, (err: any) => {
-      if (err) {
-        reject(false);//"不可读"
-      } else {
-        resolve(true);//"可读"
-      }
-    });
-  });
-}
+// export function canWriteFile(path: string) {
+//   return new Promise((resolve, reject) => {
+//     fs.access(path, fs.constants.W_OK, (err: any) => {
+//       if (err) {
+//         reject(false);//"不可读"
+//       } else {
+//         resolve(true);//"可读"
+//       }
+//     });
+//   });
+// }
 
 export function genDestructor(classInfo: string): string {
   // class KKK::Name {}
@@ -105,4 +105,12 @@ export function genDestructor(classInfo: string): string {
 export function isHeader(file: Uri): boolean {
   const headerExtensions = [".h", ".hpp", ".h++", ".hh"];
   return headerExtensions.some(headerExtension => file.fsPath.endsWith(headerExtension));
+}
+
+// 检查文件当前是否显示在编辑器中
+export function isOpenedInEditor(file: Uri) : boolean
+{
+    return workspace.textDocuments.some(doc => {
+      return doc.uri.toString() === file.toString();
+    });
 }
