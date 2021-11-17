@@ -68,6 +68,8 @@ ccls extensions
 ### 0.1.1
 - add: create unit test file
 - add: cmake build output colorize（support chinese and english）
+- fix: create function implementation has redundant virtual keyword
+- add: cmake build output file path as document link.
 
 
 -----------------------------------------------------------------------------------------------------------

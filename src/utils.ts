@@ -117,3 +117,25 @@ export function isOpenedInEditor(file: Uri): boolean {
 export function fistLetterUpper(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
+
+// 判断文件是否存在
+export async function fileExists(_path: string): Promise<boolean> {
+  try {
+    fs.accessSync(_path);
+
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// 判断路径是否是文件
+export async function isFile(_path: string): Promise<boolean> {
+  try {
+    let stat = fs.lstatSync(_path);
+
+    return stat.isFile();
+  } catch (error) {
+    return false;
+  }
+}

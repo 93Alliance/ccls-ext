@@ -1,10 +1,11 @@
-import { commands, Disposable, OutputChannel, window, workspace, Uri, SnippetString, WorkspaceEdit, TextDocument, TextEditor, Range, Position } from 'vscode';
+import { commands, Disposable, OutputChannel, window, workspace, Uri, SnippetString, WorkspaceEdit, TextDocument, TextEditor, Range, Position, languages } from 'vscode';
 import { ServerContext } from "./serverContext";
 import { disposeAll, genDestructor, isHeader, isOpenedInEditor, unwrap } from "./utils";
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { classTemplate, findHeaderGuardLinesToRemove, getHeaderGuard, unitTestTemplate } from './cpphelper';
+import { LinkProvider } from './output/linkProvider';
 
 export let cclsChan: OutputChannel | undefined;
 
@@ -104,6 +105,15 @@ export class GlobalContext implements Disposable {
             }));
 
         this.listenHeaderGuard();
+        // output link file
+        let languagesIds: string[] = workspace.getConfiguration('ccls.cpphelper', null).get('linkFileLanguagesIds')!;
+        let linkProvider = new LinkProvider();
+        let outputLinkProvider = languages.registerDocumentLinkProvider(languagesIds, linkProvider);
+        this._dispose.push(workspace.onDidChangeConfiguration((e) => {
+            outputLinkProvider.dispose();
+            languagesIds = workspace.getConfiguration('ccls.cpphelper', null).get('languagesIds')!;
+            outputLinkProvider = languages.registerDocumentLinkProvider(languagesIds, linkProvider);
+        }));
     }
 
     // 销毁函数
@@ -150,11 +160,14 @@ export class GlobalContext implements Disposable {
         // 判断源文件是否存在
         const sourceFile = dirName + "/" + fileName + sourceExtName;
         // /^\[.*\]$/
-        let funcSignature = lensesObjs.contents[0].value;
+        let funcSignature: string = lensesObjs.contents[0].value;
         const destructFunc = new RegExp("^class.*{}$");
         if (destructFunc.test(funcSignature)) {
             // class KKK::Name{} => KKK::Name::~Name() {}
             funcSignature = genDestructor(funcSignature);
+        }
+        if (new RegExp("^virtual.*$").test(funcSignature)) { // 去除virtual
+            funcSignature = funcSignature.substring(funcSignature.indexOf("virtual") + 8); // 多一个空格
         }
         let workspaceEdit = new WorkspaceEdit();
         workspaceEdit.createFile(Uri.file(sourceFile), { overwrite: false, ignoreIfExists: true });
