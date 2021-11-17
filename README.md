@@ -70,6 +70,8 @@ ccls extensions
 - add: cmake build output colorize（support chinese and english）
 - fix: create function implementation has redundant virtual keyword
 - add: cmake build output file path as document link.
+- fix: clang.resourceDir config change causes plugin restart
+- add: ccls server error will auto restart
 
 
 -----------------------------------------------------------------------------------------------------------

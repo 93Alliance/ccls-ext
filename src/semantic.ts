@@ -56,7 +56,7 @@ export const semanticKinds: string[] = [
     'function',
     'variable',
     'type',
-
+    
     'enum',
     'globalVariable',
     'macro',

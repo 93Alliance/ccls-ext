@@ -35,7 +35,7 @@ export class GlobalContext implements Disposable {
     private _server: ServerContext; // ccls服务实例
     private _isRunning = false; // ccls当前是否启动的标志
     private _srvCwd: string; // 打开的工作区目录
-    private _init = false;
+    private _restarting = false;
     public constructor(
     ) {
         // 在日志输出窗口创建一个ccls的标签，vscode会为其分配一个窗口，用于显示ccls的日志。
@@ -111,7 +111,7 @@ export class GlobalContext implements Disposable {
         let outputLinkProvider = languages.registerDocumentLinkProvider(languagesIds, linkProvider);
         this._dispose.push(workspace.onDidChangeConfiguration((e) => {
             outputLinkProvider.dispose();
-            languagesIds = workspace.getConfiguration('ccls.cpphelper', null).get('languagesIds')!;
+            languagesIds = workspace.getConfiguration('ccls.cpphelper', null).get('linkFileLanguagesIds')!;
             outputLinkProvider = languages.registerDocumentLinkProvider(languagesIds, linkProvider);
         }));
     }
@@ -224,12 +224,19 @@ export class GlobalContext implements Disposable {
 
     // 重新启动命令
     private async restartCmd(lazy: boolean = false) {
+        if (this._restarting) { // 防止重复重启
+            return;
+        }
+        this._restarting = true;
+
         await this.stopServer();
         // 重新构建一个ccls服务
         this._server = new ServerContext(this._srvCwd, lazy);
         this.chan.appendLine(`Restarting ccls, lazy mode ${lazy ? 'on' : 'off'}`);
         // 启动服务
-        return this.startServer();
+        await this.startServer();
+        this._restarting = false;
+        return;
     }
 
     private wathDatabaseFileChanged(dbPath: string, changeDbCompiler: any) {
@@ -288,6 +295,9 @@ export class GlobalContext implements Disposable {
             logChan('[info]: changeDatabaseCompiler');
             let re = new RegExp(`^.*${compiler}`);
             const data = fs.readFileSync(dbPath, 'utf8').toString();
+            if (data === "" || data === "\n") {
+                return;
+            }
             let compileCommands = JSON.parse(data);
             for (let index = 0; index < compileCommands.length; index++) {
                 let element = compileCommands[index];

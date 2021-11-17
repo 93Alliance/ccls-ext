@@ -209,11 +209,11 @@ export class ServerContext implements Disposable {
     ) {
         // 获得配置
         this.cliConfig = getClientConfig(cwd);
-        if (lazyMode) {
+        if (lazyMode) { // lazy模式，目前不清楚。
             this.ignoredConf.push(".index.initialBlacklist");
             this.cliConfig.index.initialBlacklist = [".*"];
         }
-        // 解决resourceDir路径支持双系统配置
+        // 解决resourceDir路径支持双系统配置，这里会导致 resourceDir 变化触发restart
         const config = workspace.getConfiguration('ccls');
         const resourceDir = config.get('ext.resourceDir', { windows: "", linux: "" });
         if (os.platform() === 'linux' && resourceDir.linux !== '') {
@@ -233,6 +233,10 @@ export class ServerContext implements Disposable {
     public dispose() {
         return disposeAll(this._dispose);
     }
+
+    // public ready(): boolean {
+    //     return this.client
+    // }
 
     public async start() {
         this._dispose.push(this.client.start());
@@ -369,6 +373,11 @@ export class ServerContext implements Disposable {
             }
 
             if (oldVal !== newVal) {
+                // 排除.clang.resourceDir
+                if (key === ".clang.resourceDir") {
+                    continue;
+                }
+
                 const kRestart = 'Restart';
                 const message = `Please restart server to apply the "ccls${key}" configuration change.`;
 

@@ -1,4 +1,4 @@
-import { StatusBarAlignment, StatusBarItem, window } from "vscode";
+import { commands, StatusBarAlignment, StatusBarItem, window } from "vscode";
 import { Disposable } from "vscode-jsonrpc";
 import { LanguageClient } from "vscode-languageclient/node";
 import { cclsChan } from './globalContext';
@@ -47,6 +47,7 @@ export class StatusBarIconProvider implements Disposable {
             this.wasError = false;
         } catch (e) {
             if (this.wasError) { return; }
+            commands.executeCommand('ccls.restart');
             this.wasError = true;
             this.icon.text = "ccls: error";
             this.icon.color = "red";
