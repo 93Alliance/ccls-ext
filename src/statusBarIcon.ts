@@ -47,7 +47,7 @@ export class StatusBarIconProvider implements Disposable {
             this.wasError = false;
         } catch (e) {
             if (this.wasError) { return; }
-            commands.executeCommand('ccls.restart');
+            // commands.executeCommand('ccls.restart');
             this.wasError = true;
             this.icon.text = "ccls: error";
             this.icon.color = "red";

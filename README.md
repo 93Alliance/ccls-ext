@@ -73,6 +73,9 @@ ccls extensions
 - fix: clang.resourceDir config change causes plugin restart
 - add: ccls server error will auto restart
 
+### 0.1.2
+- fix: windows output msvc error can not highlight
+- rm : ccls server error will auto restart
 
 -----------------------------------------------------------------------------------------------------------
 ## Following extension guidelines

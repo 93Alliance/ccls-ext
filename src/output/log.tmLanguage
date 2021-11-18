@@ -105,13 +105,13 @@
             </dict>
             <dict>
                 <key>match</key>
-                <string>\b(?i:(Down|Error|Failure|Fail|Fatal|false|错误|致命))(\:|\b)</string>
+                <string>\b(?i:(Down|Error|Failure|Fail|Fatal|false|error|错误|致命))(\:|\b)</string>
                 <key>name</key>
                 <string>invalid.illegal</string>
             </dict>
             <dict>
                 <key>match</key>
-                <string>\b(?i:(hint|info|information|true|log))(\:|\b)</string>
+                <string>\b(?i:(hint|info|information|true|log|note))(\:|\b)</string>
                 <key>name</key>
                 <string>keyword</string>
             </dict>
