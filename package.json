@@ -757,15 +757,21 @@
 					"description": "The header guard is automatically created when the file is created."
 				},
 				"ccls.cpphelper.linkFileLanguagesIds": {
-                    "type": "array",
-                    "default": [
-                        "log",
-                        "Log"
-                    ],
-                    "description": "Set the languages ids to provide links for.",
-                    "scope": "resource"
-                }
-
+					"type": "array",
+					"default": [
+						"log",
+						"Log"
+					],
+					"description": "Set the languages ids to provide links for.",
+					"scope": "resource"
+				},
+				"ccls.cpphelper.region": {
+					"type": "object",
+					"default": {
+						"start": "// #region name",
+						"end": "// #endregion"
+					}
+				}
 			}
 		},
 		"languages": [
@@ -788,12 +794,12 @@
 			}
 		],
 		"grammars": [
-            {
-                "language": "Log",
-                "scopeName": "code.log",
-                "path": "./src/output/log.tmLanguage"
-            }
-        ]
+			{
+				"language": "Log",
+				"scopeName": "code.log",
+				"path": "./src/output/log.tmLanguage"
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run package",

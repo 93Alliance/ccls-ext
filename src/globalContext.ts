@@ -4,7 +4,7 @@ import { disposeAll, genDestructor, isHeader, isOpenedInEditor, unwrap } from ".
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { classTemplate, findHeaderGuardLinesToRemove, getHeaderGuard, unitTestTemplate } from './cpphelper';
+import { classTemplate, findHeaderGuardLinesToRemove, getHeaderGuard, instertRegion, unitTestTemplate } from './cpphelper';
 import { LinkProvider } from './output/linkProvider';
 
 export let cclsChan: OutputChannel | undefined;
@@ -114,6 +114,7 @@ export class GlobalContext implements Disposable {
             languagesIds = workspace.getConfiguration('ccls.cpphelper', null).get('linkFileLanguagesIds')!;
             outputLinkProvider = languages.registerDocumentLinkProvider(languagesIds, linkProvider);
         }));
+        this._dispose.push(commands.registerCommand('ccls.instertRegion', instertRegion));
     }
 
     // 销毁函数

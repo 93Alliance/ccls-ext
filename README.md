@@ -76,6 +76,7 @@ ccls extensions
 ### 0.1.2
 - fix: windows output msvc error can not highlight
 - rm : ccls server error will auto restart
+- add: instert region outside of selection text
 
 -----------------------------------------------------------------------------------------------------------
 ## Following extension guidelines

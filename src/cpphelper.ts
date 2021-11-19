@@ -1,5 +1,25 @@
-import { window, workspace } from "vscode";
+import { window, workspace, WorkspaceEdit } from "vscode";
 import { fistLetterUpper } from "./utils";
+
+export function instertRegion() {
+    try {
+        const editor = window.activeTextEditor;
+        if (editor === undefined) {
+            return;
+        }
+        let selection = editor.selection;
+        let uri = editor.document.uri;
+        let editWs = new WorkspaceEdit();
+        let region: any = workspace.getConfiguration("ccls").get<any>('cpphelper.region');
+        editWs.insert(uri, selection.start, "\n" + region.start + "\n");
+        editWs.insert(uri, selection.end, "\n" + region.end + "\n");
+        workspace.applyEdit(editWs);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+
 
 // 讲文件名转换为header guard
 export function getHeaderGuard(fileName: string): string {
