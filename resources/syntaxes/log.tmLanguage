@@ -50,7 +50,7 @@
             <dict>
                 <!-- Exception (with custom naming and namespacing) -->
                 <key>match</key>
-                <string>\b(?i:((\.)*[a-z]|[0-9])*(Exception|Error|Failure|Fail))\b</string>
+                <string>\b(?i:((\.)*[a-z]|[0-9])*(Exception|Error|Failure|Fail|error))\b</string>
                 <key>name</key>
                 <string>invalid</string>
             </dict>
@@ -117,7 +117,7 @@
             </dict>
             <dict>
                 <key>match</key>
-                <string>\b(?i:(warning|warn|test|debug|null|undefined|NaN|警告))(\:|\b)</string>
+                <string>\b(?i:(warning|warn|test|debug|null|undefined|NaN|Warn|警告))(\:|\b)</string>
                 <key>name</key>
                 <string>invalid.deprecated</string>
             </dict>
@@ -148,7 +148,5 @@
                 <string>comment.line</string>
             </dict>
         </array>
-        <key>uuid</key>
-        <string>ab259404-3072-4cd4-a943-7cbbd32e373f</string>
     </dict>
 </plist>

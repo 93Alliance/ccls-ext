@@ -79,6 +79,9 @@ ccls extensions
 ### 0.1.3
 - add: instert region outside of selection text
 
+### 0.1.4
+- fix: can not laod output log grammars config file
+
 -----------------------------------------------------------------------------------------------------------
 ## Following extension guidelines
 
